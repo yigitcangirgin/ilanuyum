@@ -1,4 +1,5 @@
 ![Dashboard](docs/dashboard.png)
+![API docs](docs/api-docs.png)
 ![CI](https://github.com/yigitcangirgin/ilanuyum/actions/workflows/ci.yml/badge.svg)
 # İlanUyum
 
