@@ -1,3 +1,5 @@
+![Dashboard](docs/dashboard.png)
+![CI](https://github.com/yigitcangirgin/ilanuyum/actions/workflows/ci.yml/badge.svg)
 # İlanUyum
 
 A job application tracker: a clean REST API (FastAPI) with a small, dependency-free web UI.
