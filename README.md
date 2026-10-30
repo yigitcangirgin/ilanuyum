@@ -104,6 +104,36 @@ See [ROADMAP.md](ROADMAP.md).
 
 ## What I learned
 
-- 
-- 
-- 
+I built İlanUyum to practice backend development with FastAPI beyond tutorial-level
+examples. I used Claude as a pair-programming assistant while building it, then went through
+the code to understand every layer. These are the main things I took away:
+
+- **Layered structure.** I keep the database models (`models.py`) and the API schemas
+  (`schemas.py`) separate. The models describe tables; the schemas describe what the API
+  accepts and returns, so internal fields such as `hashed_password` never leak into a response.
+- **Authentication.** Passwords are hashed with Argon2 and never stored in plain text. After
+  login the API returns a signed JWT, and a dependency (`get_current_user`) checks it on every
+  protected route. Wrong email and wrong password return the same error on purpose, so an
+  attacker cannot find out which emails are registered.
+- **Authorization.** Every query on applications is filtered by the current user. If someone
+  requests another user's application, the API returns 404 instead of 403, so it does not
+  reveal that the record exists.
+- **Migrations with Alembic.** Instead of `create_all()` I use versioned migrations, so the
+  schema can change over time without losing data. The same migration runs on SQLite
+  locally and on PostgreSQL in Docker.
+- **Testing.** The test suite uses an in-memory SQLite database and FastAPI's dependency
+  overrides, so each test starts with a clean database and never touches real data. I tested
+  the failure cases too: duplicate emails, invalid input, missing tokens, and access to
+  another user's data.
+- **PUT vs PATCH.** PUT replaces the whole resource, while PATCH updates only the fields
+  that were sent (`model_dump(exclude_unset=True)`).
+- **Tooling.** Docker Compose runs the API with PostgreSQL, and GitHub Actions runs ruff and
+  pytest on every push. Setting up WSL and virtualization for Docker Desktop on Windows was
+  its own lesson in debugging environments.
+
+### What I would improve next
+
+- Add search and sorting for applications.
+- Let users upload a CV and compare it with a job posting (the original idea behind the
+  project), using background jobs and vector search with pgvector.
+- Add refresh tokens and rate limiting for login attempts.
