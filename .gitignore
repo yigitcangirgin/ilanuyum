@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Ortam degiskenleri (sifreler burada, GitHub'a gitmemeli)
+.env
+
+# Yerel veritabani
+*.db
+
+# Test / araclar
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
