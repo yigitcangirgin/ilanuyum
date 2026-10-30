@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% block title %}İlanUyum - Dashboard{% endblock %}
+{% block header_extra %}
+<div class="user-box">
+  <span id="user-email" class="user-email"></span>
+  <button id="logout-btn" class="btn btn-ghost" type="button">Log out</button>
+</div>
+{% endblock %}
+{% block content %}
+<h1>İlanUyum dashboard</h1>
+
+<section class="stats" aria-label="Statistics">
+  <div class="stat stat-total"><span class="stat-label">Total</span><span class="stat-value" id="stat-total">0</span></div>
+  <div class="stat stat-applied"><span class="stat-label">Applied</span><span class="stat-value" id="stat-applied">0</span></div>
+  <div class="stat stat-interview"><span class="stat-label">Interview</span><span class="stat-value" id="stat-interview">0</span></div>
+  <div class="stat stat-offer"><span class="stat-label">Offer</span><span class="stat-value" id="stat-offer">0</span></div>
+  <div class="stat stat-rejected"><span class="stat-label">Rejected</span><span class="stat-value" id="stat-rejected">0</span></div>
+</section>
+
+<section class="card" aria-labelledby="add-title">
+  <h2 id="add-title">Add application</h2>
+  <form id="add-form" class="add-grid" novalidate>
+    <div class="field">
+      <label for="f-company">Company</label>
+      <input id="f-company" name="company" type="text" maxlength="200" required>
+    </div>
+    <div class="field">
+      <label for="f-position">Position</label>
+      <input id="f-position" name="position" type="text" maxlength="200" required>
+    </div>
+    <div class="field">
+      <label for="f-url">Job URL</label>
+      <input id="f-url" name="job_url" type="url" maxlength="500" placeholder="https://">
+    </div>
+    <div class="field">
+      <label for="f-status">Status</label>
+      <select id="f-status" name="status">
+        <option value="applied">Applied</option>
+        <option value="interview">Interview</option>
+        <option value="offer">Offer</option>
+        <option value="rejected">Rejected</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="f-date">Applied on</label>
+      <input id="f-date" name="applied_at" type="date" required>
+    </div>
+    <div class="field field-wide">
+      <label for="f-notes">Notes</label>
+      <textarea id="f-notes" name="notes" rows="2" maxlength="5000"></textarea>
+    </div>
+    <p class="form-error field-wide" id="add-error" role="alert" hidden></p>
+    <div class="field-wide"><button class="btn btn-primary" type="submit">Add application</button></div>
+  </form>
+</section>
+
+<section class="card" aria-labelledby="list-title">
+  <div class="list-head">
+    <h2 id="list-title">Applications</h2>
+    <div class="filter">
+      <label for="status-filter">Filter</label>
+      <select id="status-filter">
+        <option value="">All statuses</option>
+        <option value="applied">Applied</option>
+        <option value="interview">Interview</option>
+        <option value="offer">Offer</option>
+        <option value="rejected">Rejected</option>
+      </select>
+    </div>
+  </div>
+  <p class="form-error" id="list-error" role="alert" hidden></p>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Company</th><th>Position</th><th>Applied</th><th>Status</th><th>Notes</th><th><span class="sr-only">Actions</span></th></tr>
+      </thead>
+      <tbody id="app-rows"></tbody>
+    </table>
+  </div>
+  <p id="empty-msg" class="empty" hidden>No applications yet. Add your first one above.</p>
+</section>
+{% endblock %}
