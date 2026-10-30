@@ -1,0 +1,1 @@
+"""İlanUyum job application tracker."""
