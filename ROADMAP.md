@@ -1,8 +1,4 @@
 # Yol Haritası
-
-> Not: `[x]` işaretli maddeler kodda uygulandı, ancak bu ortamda çalıştırılamadı.
-> Kendi bilgisayarında `uv run pytest` ve uygulamayı çalıştırarak doğrula.
-
 ## v0
 
 - [x] 1. In-memory CRUD (temel endpoint'ler)
