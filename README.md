@@ -58,6 +58,44 @@ This starts PostgreSQL, applies the migrations, and serves the app on port 8000.
 | PUT | `/applications/{id}` | yes | Replace |
 | PATCH | `/applications/{id}` | yes | Partial update |
 | DELETE | `/applications/{id}` | yes | Delete (204) |
+| POST | `/applications/{id}/match` | yes | Compare a CV with the job posting using an LLM (201) |
+| GET | `/applications/{id}/matches` | yes | Previous match analyses, newest first |
+
+## CV match analysis (LLM)
+
+`POST /applications/{id}/match` compares a CV with the application's job posting and returns a
+fit score with the matched and missing requirements and concrete suggestions.
+
+```jsonc
+// request
+{"cv_text": "Python backend developer ...", "job_description": "We are hiring ... (optional)"}
+
+// response (201)
+{
+  "id": 1, "application_id": 3, "score": 72, "model": "claude-haiku-5-5",
+  "summary": "Strong FastAPI and PostgreSQL match; no Kubernetes experience.",
+  "matched_skills": ["FastAPI", "PostgreSQL", "Docker"],
+  "missing_skills": ["Kubernetes"],
+  "suggestions": ["Mention the Docker Compose setup in the CV."],
+  "created_at": "2026-11-10T00:00:00Z"
+}
+```
+
+How it works:
+
+- **Provider-agnostic.** Anthropic (default) or OpenAI, chosen with `LLM_PROVIDER`; the API key
+  comes from the environment. Both are called with plain `httpx`, no vendor SDK. Without a key the
+  endpoint answers 503 and the rest of the API keeps working.
+- **Validated output.** The model must answer with one JSON object, which is validated with a
+  Pydantic schema (score 0-100, bounded lists and lengths). An invalid answer is retried once;
+  if it fails again the API returns 502 and nothing is stored.
+- **Prompt-injection aware.** The CV and the posting are passed inside `<cv>` and `<job_posting>`
+  tags and the system prompt tells the model to treat them as data, never as instructions.
+- **Privacy.** The CV text is used for the request only and is not stored; only the analysis is.
+- **Ownership.** Same rule as the rest of the API: another user's application returns 404, before
+  any paid LLM call is made.
+- **Tested without network.** The endpoint tests replace the LLM with a fake through FastAPI
+  dependency overrides, and the HTTP clients are tested with `httpx.MockTransport`.
 
 ## Project structure
 
@@ -69,7 +107,9 @@ app/
   models.py          SQLAlchemy models
   schemas.py         Pydantic schemas
   security.py        password hashing, JWT
-  deps.py            auth dependencies
+  deps.py            auth and LLM client dependencies
+  llm.py             Anthropic / OpenAI clients over httpx
+  matching.py        CV <-> job posting prompt, parsing and validation
   routers/           health, auth, applications, pages
   templates/         Jinja2 pages
   static/            CSS and JS
@@ -134,6 +174,7 @@ the code to understand every layer. These are the main things I took away:
 ### What I would improve next
 
 - Add search and sorting for applications.
-- Let users upload a CV and compare it with a job posting (the original idea behind the
-  project), using background jobs and vector search with pgvector.
+- Accept CV uploads (PDF/DOCX) for the match analysis, and run it as a background job.
+- Use embeddings with pgvector to rank all saved postings against a CV.
+- Rate-limit the match endpoint per user to keep LLM costs under control.
 - Add refresh tokens and rate limiting for login attempts.

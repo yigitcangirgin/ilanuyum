@@ -15,5 +15,5 @@
 
 - [ ] CV yükleme (PDF/DOCX)
 - [ ] Celery + Redis ile arka plan işleri
-- [ ] LLM ile ilan/CV'den beceri çıkarma
+- [x] LLM ile CV ↔ ilan uyum analizi (skor, eşleşen/eksik beceriler, öneriler)
 - [ ] Embedding + pgvector ile ilan-CV eşleştirme (uyum skoru)

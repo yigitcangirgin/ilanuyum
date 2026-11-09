@@ -21,6 +21,10 @@ services:
     environment:
       DATABASE_URL: postgresql+psycopg://ilanuyum:ilanuyum@db:5432/ilanuyum
       SECRET_KEY: ${SECRET_KEY:-dev-secret-change-me}
+      LLM_PROVIDER: ${LLM_PROVIDER:-anthropic}
+      LLM_MODEL: ${LLM_MODEL:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
     ports:
       - "8000:8000"
     depends_on:

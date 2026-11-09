@@ -1,12 +1,15 @@
 """Shared FastAPI dependencies."""
 
+from collections.abc import Iterator
 from typing import Annotated
 
 from fastapi import Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 
+from app.config import settings
 from app.database import get_db
+from app.llm import AnthropicClient, LLMClient, OpenAIClient
 from app.models import User
 from app.security import decode_access_token
 
@@ -35,3 +38,26 @@ def get_current_user(token: Annotated[str, Depends(oauth2_scheme)], db: DbSessio
 
 
 CurrentUser = Annotated[User, Depends(get_current_user)]
+
+
+def get_llm_client() -> Iterator[LLMClient]:
+    """Yield the configured LLM client (closed after the request), or answer 503."""
+    model = settings.resolved_llm_model
+    timeout = settings.llm_timeout_seconds
+    client: AnthropicClient | OpenAIClient
+    if settings.llm_provider == "anthropic" and settings.anthropic_api_key:
+        client = AnthropicClient(settings.anthropic_api_key, model, timeout)
+    elif settings.llm_provider == "openai" and settings.openai_api_key:
+        client = OpenAIClient(settings.openai_api_key, model, timeout)
+    else:
+        raise HTTPException(
+            status_code=503,
+            detail="Match analysis is not configured: set the API key for LLM_PROVIDER",
+        )
+    try:
+        yield client
+    finally:
+        client.close()
+
+
+Llm = Annotated[LLMClient, Depends(get_llm_client)]
