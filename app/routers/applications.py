@@ -5,9 +5,18 @@ from typing import Annotated, Any
 from fastapi import APIRouter, HTTPException, Query, Response, status
 from sqlalchemy import func, select
 
-from app.deps import CurrentUser, DbSession
-from app.models import Application, ApplicationStatus
-from app.schemas import ApplicationCreate, ApplicationRead, ApplicationUpdate, StatsRead
+from app.deps import CurrentUser, DbSession, Llm
+from app.llm import LLMError
+from app.matching import analyse_match
+from app.models import Application, ApplicationStatus, MatchAnalysis
+from app.schemas import (
+    ApplicationCreate,
+    ApplicationRead,
+    ApplicationUpdate,
+    MatchRead,
+    MatchRequest,
+    StatsRead,
+)
 
 router = APIRouter(prefix="/applications", tags=["applications"])
 
@@ -106,3 +115,59 @@ def delete_application(application_id: int, db: DbSession, user: CurrentUser) ->
     db.delete(application)
     db.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.post(
+    "/{application_id}/match",
+    response_model=MatchRead,
+    status_code=status.HTTP_201_CREATED,
+    responses={
+        422: {"description": "No job description on the application or in the request"},
+        502: {"description": "The LLM provider failed or returned an invalid analysis"},
+        503: {"description": "No LLM API key configured"},
+    },
+)
+def create_match_analysis(
+    application_id: int, payload: MatchRequest, db: DbSession, user: CurrentUser, llm: Llm
+) -> MatchAnalysis:
+    """Compare a CV with the application's job posting using an LLM and store the result.
+
+    The CV text is used only for this request and is not stored.
+    """
+    application = _get_owned(db, user, application_id)
+    if payload.job_description is not None:
+        application.job_description = payload.job_description
+    job_description = (application.job_description or "").strip()
+    if not job_description:
+        raise HTTPException(
+            status_code=422,
+            detail="Add a job_description to the application or send one in the request",
+        )
+
+    try:
+        result = analyse_match(
+            llm, payload.cv_text, job_description, application.position, application.company
+        )
+    except LLMError as exc:
+        db.rollback()
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+    analysis = MatchAnalysis(application_id=application.id, model=llm.model, **result.model_dump())
+    db.add(analysis)
+    db.commit()
+    db.refresh(analysis)
+    return analysis
+
+
+@router.get("/{application_id}/matches", response_model=list[MatchRead])
+def list_match_analyses(
+    application_id: int, db: DbSession, user: CurrentUser
+) -> list[MatchAnalysis]:
+    """Previous analyses for one application, newest first."""
+    application = _get_owned(db, user, application_id)
+    query = (
+        select(MatchAnalysis)
+        .where(MatchAnalysis.application_id == application.id)
+        .order_by(MatchAnalysis.created_at.desc(), MatchAnalysis.id.desc())
+    )
+    return list(db.scalars(query).all())
